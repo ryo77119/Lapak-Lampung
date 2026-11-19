@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lapak Lampung - Aplikasi</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial}
+body{background:#f2f2f2;display:flex;justify-content:center}
+.app{width:100%;max-width:420px;background:#fff;min-height:100vh;position:relative;padding-bottom:70px}
+header{background:#FF6B00;color:#fff;padding:16px}
+header h1{font-size:22px} header p{font-size:13px;opacity:.9}
+.screen{display:none;padding:16px} .screen.active{display:block}
+input,select,textarea{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;margin:7px 0}
+.btn{background:#FF6B00;color:#fff;border:none;padding:13px;width:100%;border-radius:10px;font-weight:bold;font-size:16px;cursor:pointer;margin-top:8px}
+.btn2{background:#fff;color:#FF6B00;border:2px solid #FF6B00;padding:10px;width:100%;border-radius:10px;font-weight:bold;cursor:pointer;margin-top:8px}
+.card{border:1px solid #eee;border-radius:14px;padding:10px;margin:10px 0;display:flex;gap:10px;align-items:center}
+.card img{width:75px;height:75px;object-fit:cover;border-radius:10px}
+.price{color:#FF6B00;font-weight:bold}
+.tag{background:#FFF0E6;padding:7px 12px;border-radius:20px;font-size:13px;display:inline-block;margin:4px 4px 0 0;cursor:pointer}
+.tag.active{background:#FF6B00;color:#fff}
+.banner{background:#FF6B00;color:#fff;padding:14px;border-radius:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .card{display:block;text-align:center} .grid img{width:100%;height:100px}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:#fff;border-top:1px solid #eee;display:flex;justify-content:space-around;padding:10px 0;z-index:10}
+nav button{border:none;background:none;font-size:13px;cursor:pointer} nav button.active{color:#FF6B00;font-weight:bold}
+.badge{background:#FF6B00;color:#fff;padding:2px 8px;border-radius:20px;font-size:11px}
+.stat{background:#FF6B00;color:#fff;border-radius:12px;padding:12px;flex:1;text-align:center}
+.flex{display:flex;gap:10px} .toast{background:#222;color:#fff;padding:10px;border-radius:10px;text-align:center;margin-top:10px;display:none}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>🛒 Lapak Lampung</h1><p>Dari UMKM Lampung, Untuk Indonesia</p></header>
+
+<!-- LOGIN -->
+<div id="page-login" class="screen active">
+  <h2 style="margin:20px 0">Selamat Datang!</h2>
+  <p>Masuk sebagai Pembeli / Penjual</p>
+  <label>Nama Kamu</label><input id="nama" placeholder="Contoh: Andi Pratama">
+  <label>Nomor HP</label><input placeholder="+62 812 xxx">
+  <label>Masuk Sebagai</label>
+  <select id="role"><option value="pembeli">Pembeli</option><option value="penjual">Penjual</option></select>
+  <button class="btn" onclick="login()">Masuk →</button>
+  <button class="btn2" onclick="login()">G Login dengan Google</button>
+  <p style="text-align:center;margin-top:10px"><small>Belum punya akun? <b style="color:#FF6B00">Daftar Sekarang</b></small></p>
+</div>
+
+<!-- HOME / KATALOG -->
+<div id="page-home" class="screen">
+  <p>👋 Halo, <b id="namaUser">Andi</b>!</p>
+  <h2 style="margin:8px 0">Temukan Produk UMKM Lampung</h2>
+  <div class="banner"><b>PROMO SPESIAL</b><br><small>Diskon hingga 30% produk lokal!</small></div>
+  <div style="margin-top:10px">
+    <span class="tag active" onclick="filterKategori('Semua',this)">Semua</span>
+    <span class="tag" onclick="filterKategori('Makanan',this)">🍜 Makanan</span>
+    <span class="tag" onclick="filterKategori('Minuman',this)">🥤 Minuman</span>
+    <span class="tag" onclick="filterKategori('Fashion',this)">👕 Fashion</span>
+    <span class="tag" onclick="filterKategori('Kerajinan',this)">🧶 Kerajinan</span>
+  </div>
+  <input id="cari" placeholder="🔍 Cari keripik, kopi, tapis..." onkeyup="renderProduk()">
+  <div id="listProduk"></div>
+  <div id="toast" class="toast">Ditambah ke keranjang!</div>
+</div>
+
+<!-- DETAIL -->
+<div id="page-detail" class="screen">
+  <button onclick="show('home')">← Kembali</button>
+  <img id="d-img" style="width:100%;height:200px;object-fit:cover;border-radius:12px;margin-top:10px">
+  <h2 id="d-nama"></h2><p id="d-toko"></p>
+  <h2 id="d-harga" class="price"></h2>
+  <p id="d-stok"></p><p id="d-desc" style="margin-top:8px"></p>
+  <button class="btn2" onclick="tambahKeranjang()">🛒 + Keranjang</button>
+  <button class="btn" onclick="beliLangsung()">Beli Sekarang</button>
+</div>
+
+<!-- KERANJANG -->
+<div id="page-cart" class="screen">
+  <h2>Keranjang Belanja</h2>
+  <div id="listCart"></div>
+  <hr><p><b>Total: <span id="totalCart" class="price">Rp0</span></b></p>
+  <button class="btn" onclick="show('checkout')">Checkout →</button>
+</div>
+
+<!-- CHECKOUT -->
+<div id="page-checkout" class="screen">
+  <h2>Checkout</h2>
+  <label>Alamat</label><input value="Jl. Teuku Umar No.12, Bandar Lampung">
+  <label>Metode Pembayaran</label>
+  <select id="bayar"><option>QRIS</option><option>COD (Bayar di Tempat)</option><option>Transfer Bank</option></select>
+  <div id="ringkasan"></div>
+  <p><b>Total Bayar: <span id="totalCheckout" class="price"></span></b></p>
+  <button class="btn" onclick="konfirmasi()">Konfirmasi Pesanan</button>
+</div>
+
+<!-- RIWAYAT -->
+<div id="page-riwayat" class="screen">
+  <h2>Riwayat Pesanan</h2>
+  <div style="text-align:center;border:1px solid #eee;padding:10px;border-radius:10px">✅ Diproses — 🚚 Dikirim — ○ Selesai</div>
+  <div id="listRiwayat"></div>
+</div>
+
+<!-- DASHBOARD PENJUAL -->
+<div id="page-seller" class="screen">
+  <h2>Halo, <span id="namaToko">Toko Pisang Jaya</span></h2>
+  <div class="flex"><div class="stat">Pesanan Hari Ini<b id="statPesanan">12</b></div><div class="stat">Pendapatan<b id="statUang">Rp850.000</b></div></div>
+  <div style="border:1px solid #eee;padding:10px;border-radius:12px;margin-top:12px">⚠️ <b>Stok Menipis</b><p>Keripik Pisang - Tersisa 5 pcs <button onclick="alert('Silahkan restok!')" style="color:#FF6B00;border:none;background:none;font-weight:bold">Restok ›</button></p></div>
+  <h3 style="margin:12px 0">Kelola Toko</h3>
+  <button class="btn" onclick="show('tambah')">+ Tambah Produk</button>
+  <button class="btn2" onclick="show('kelola')">Lihat Pesanan Masuk</button>
+  <h3 style="margin:12px 0">Produk Saya</h3><div id="listProdukSeller"></div>
+</div>
+
+<!-- TAMBAH PRODUK -->
+<div id="page-tambah" class="screen">
+  <button onclick="show('seller')">← Kembali</button>
+  <h2>Tambah Produk</h2>
+  <label>Nama Produk</label><input id="p-nama" placeholder="Keripik Pisang Renyah">
+  <div class="flex"><div style="flex:1"><label>Harga</label><input id="p-harga" type="number" placeholder="25000"></div><div style="flex:1"><label>Stok</label><input id="p-stok" type="number" placeholder="50"></div></div>
+  <label>Kategori</label><select id="p-kat"><option>Makanan</option><option>Minuman</option><option>Fashion</option><option>Kerajinan</option></select>
+  <label>Deskripsi</label><textarea id="p-desc" placeholder="Dibuat dari pisang pilihan..."></textarea>
+  <button class="btn" onclick="simpanProduk()">💾 Simpan Produk</button>
+</div>
+
+<!-- KELOLA PESANAN -->
+<div id="page-kelola" class="screen">
+  <button onclick="show('seller')">← Kembali</button>
+  <h2>Kelola Pesanan</h2>
+  <div class="card" style="display:block"><p><b>Pesanan #LLP10023</b> <span class="badge">Baru</span></p><p>Keripik Pisang x2 - Rp50.000<br><small>Pembeli: Andi Pratama</small></p><div class="flex"><button class="btn2" onclick="tolak(this)">Tolak</button><button class="btn" onclick="terima(this)">Terima</button></div></div>
+  <div class="card" style="display:block"><p><b>Pesanan #LLP10024</b> <span class="badge">Baru</span></p><p>Kopi Lampung x1 - Rp45.000<br><small>Pembeli: Sari Wulandari</small></p><div class="flex"><button class="btn2" onclick="tolak(this)">Tolak</button><button class="btn" onclick="terima(this)">Terima</button></div></div>
+</div>
+
+</div>
+
+<nav id="bottomNav" style="display:none">
+  <button onclick="show('home')" id="nav-home" class="active">🏠<br>Home</button>
+  <button onclick="show('cart')" id="nav-cart">🛒<br>Keranjang (<span id="jmlCart">0</span>)</button>
+  <button onclick="show('riwayat')">🧾<br>Riwayat</button>
+  <button onclick="show('seller')">🏪<br>Jual</button>
+</nav>
+
+<script>
+let produk=[
+ {id:1,nama:"Keripik Pisang Renyah",toko:"Pisang Jaya Lampung",harga:25000,stok:50,kat:"Makanan",img:"https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=400",desc:"Keripik pisang renyah dari pisang Lampung pilihan, tanpa pengawet."},
+ {id:2,nama:"Kopi Lampung",toko:"Kopi Way Kanan",harga:45000,stok:30,kat:"Minuman",img:"https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400",desc:"Kopi robusta Lampung asli, aroma kuat."},
+ {id:3,nama:"Kain Tapis",toko:"Tenun Lampung Craft",harga:150000,stok:10,kat:"Fashion",img:"https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?w=400",desc:"Kain tapis tradisional Lampung handmade."},
+ {id:4,nama:"Madu Lampung",toko:"Madu Alami Lampung",harga:60000,stok:25,kat:"Makanan",img:"https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400",desc:"Madu murni dari hutan Lampung."}
+];
+let cart=[], riwayat=[], kategoriAktif="Semua", detailId=1;
+function rupiah(n){return "Rp"+n.toLocaleString('id-ID')}
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(id=='cart') renderCart(); if(id=='riwayat') renderRiwayat(); if(id=='seller') renderSeller();
+  window.scrollTo(0,0);
+}
+function login(){
+  let n=document.getElementById('nama').value||"Andi";
+  let r=document.getElementById('role').value;
+  document.getElementById('namaUser').innerText=n;
+  document.getElementById('namaToko').innerText="Toko "+n;
+  document.getElementById('bottomNav').style.display="flex";
+  renderProduk(); show(r=='penjual'?'seller':'home');
+  alert("Selamat datang, "+n+"! Kamu masuk sebagai "+r);
+}
+function filterKategori(k,el){
+  kategoriAktif=k; document.querySelectorAll('.tag').forEach(t=>t.classList.remove('active')); el.classList.add('active'); renderProduk();
+}
+function renderProduk(){
+  let q=(document.getElementById('cari').value||"").toLowerCase();
+  let html="";
+  produk.filter(p=>(kategoriAktif=="Semua"||p.kat==kategoriAktif)&&p.nama.toLowerCase().includes(q)).forEach(p=>{
+    html+=`<div class="card" onclick="bukaDetail(${p.id})"><img src="${p.img}"><div><b>${p.nama}</b><br><small>${p.toko} • ${p.kat}</small><br><span class="price">${rupiah(p.harga)}</span><br><small>Stok: ${p.stok}</small></div></div>`;
+  });
+  document.getElementById('listProduk').innerHTML=html||"<p>Tidak ada produk.</p>";
+}
+function bukaDetail(id){
+  detailId=id; let p=produk.find(x=>x.id==id);
+  document.getElementById('d-img').src=p.img; document.getElementById('d-nama').innerText=p.nama;
+  document.getElementById('d-toko').innerText=p.toko; document.getElementById('d-harga').innerText=rupiah(p.harga);
+  document.getElementById('d-stok').innerText="Stok: Tersisa "+p.stok+" pcs"; document.getElementById('d-desc').innerText=p.desc;
+  show('detail');
+}
+function tambahKeranjang(){
+  let p=produk.find(x=>x.id==detailId); cart.push(p);
+  document.getElementById('jmlCart').innerText=cart.length;
+  let t=document.getElementById('toast'); t.style.display="block"; setTimeout(()=>t.style.display="none",1500);
+}
+function beliLangsung(){tambahKeranjang(); show('cart');}
+function renderCart(){
+  let total=0, html="";
+  cart.forEach((p,i)=>{total+=p.harga; html+=`<div class="card"><img src="${p.img}"><div><b>${p.nama}</b><br>${rupiah(p.harga)} <button onclick="hapusCart(${i})" style="color:red;border:none;background:none">Hapus</button></div></div>`});
+  document.getElementById('listCart').innerHTML=html||"<p>Keranjang masih kosong.</p>";
+  document.getElementById('totalCart').innerText=rupiah(total);
+  document.getElementById('totalCheckout').innerText=rupiah(total+8000);
+  document.getElementById('ringkasan').innerHTML=`<p>Produk: ${rupiah(total)}<br>Ongkir: Rp8.000</p>`;
+}
+function hapusCart(i){cart.splice(i,1); document.getElementById('jmlCart').innerText=cart.length; renderCart();}
+function konfirmasi(){
+  if(cart.length==0){alert("Keranjang kosong!"); return;}
+  let total=cart.reduce((a,b)=>a+b.harga,0)+8000;
+  riwayat.push({nama:cart.map(c=>c.nama).join(", "), total:total, status:"Dikirim", tanggal:new Date().toLocaleDateString('id-ID')});
+  cart=[]; document.getElementById('jmlCart').innerText=0;
+  alert("Pesanan Berhasil! Total "+rupiah(total)+" via "+document.getElementById('bayar').value); show('riwayat');
+}
+function renderRiwayat(){
+  let html=""; riwayat.forEach(r=>{html+=`<div class="card" style="display:block"><b>${r.nama}</b><br><small>${r.tanggal} • <span class="badge">${r.status}</span></small><br><b class="price">${rupiah(r.total)}</b></div>`});
+  document.getElementById('listRiwayat').innerHTML=html||"<p>Belum ada pesanan.</p>";
+}
+function renderSeller(){
+  let html=""; produk.forEach(p=>{html+=`<div class="card"><img src="${p.img}"><div><b>${p.nama}</b><br>${rupiah(p.harga)} • Stok ${p.stok}</div></div>`});
+  document.getElementById('listProdukSeller').innerHTML=html;
+}
+function simpanProduk(){
+  let nama=document.getElementById('p-nama').value; let harga=parseInt(document.getElementById('p-harga').value||0);
+  let stok=parseInt(document.getElementById('p-stok').value||0); let kat=document.getElementById('p-kat').value; let desc=document.getElementById('p-desc').value;
+  if(!nama||!harga){alert("Isi nama & harga dulu!"); return;}
+  produk.push({id:Date.now(),nama:nama,toko:"Toko Saya",harga:harga,stok:stok,kat:kat,img:"https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=400",desc:desc});
+  alert("Produk Berhasil Disimpan!"); show('seller');
+}
+function terima(btn){btn.parentElement.parentElement.innerHTML="<p style='color:green;font-weight:bold'>✅ Pesanan Diterima! Segera kirim pesanan.</p>";}
+function tolak(btn){btn.parentElement.parentElement.innerHTML="<p style='color:red;font-weight:bold'>❌ Pesanan Ditolak.</p>";}
+renderProduk();
+</script>
+</body>
+</html>
